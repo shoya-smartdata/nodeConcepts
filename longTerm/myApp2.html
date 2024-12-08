@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Long Polling Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-5">
+
+    <div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold text-center mb-4">Long Polling Client</h1>
+
+        <div id="messages" class="space-y-4 mb-4">
+            <!-- Messages will be displayed here -->
+        </div>
+
+        <div class="mb-4">
+            <input type="text" id="messageInput" placeholder="Enter your message" 
+                class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <button id="sendMessageBtn" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-400">
+            Send Message
+        </button>
+    </div>
+
+    <script>
+        // Function to display messages on the page
+        function displayMessages(messages) {
+            const messagesContainer = document.getElementById("messages");
+            messages.forEach(message => {
+                const messageDiv = document.createElement("div");
+                messageDiv.classList.add("p-4", "bg-gray-200", "rounded-lg", "shadow-sm");
+                messageDiv.textContent = message.text;
+                messagesContainer.appendChild(messageDiv);
+            });
+        }
+
+        // Long Polling function to get new messages
+        function longPolling() {
+            fetch('/new-messages')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        displayMessages(data); // Display new messages
+                    }
+                    longPolling(); // Keep the polling going
+                })
+                .catch(err => {
+                    console.error('Error during long polling:', err);
+                    setTimeout(longPolling, 1000); // Retry after 1 second if there’s an error
+                });
+        }
+
+        // Button to send a custom message
+        document.getElementById("sendMessageBtn").addEventListener("click", function() {
+            const message = document.getElementById("messageInput").value.trim();
+            if (message) {
+                fetch('/send-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message }) // Send the message in the request body
+                })
+                .then(response => response.text())
+                .then(() => {
+                    console.log("Message sent");
+                    document.getElementById("messageInput").value = ''; // Clear the input field
+                })
+                .catch(err => {
+                    console.error("Error sending message", err);
+                });
+            } else {
+                alert("Please enter a message.");
+            }
+        });
+
+        // Start long polling
+        longPolling();
+    </script>
+
+</body>
+</html>
