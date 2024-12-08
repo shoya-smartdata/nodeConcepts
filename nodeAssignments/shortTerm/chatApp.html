@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailwind Chat App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-blue-200 to-indigo-200 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-md bg-white rounded-lg shadow-xl p-6">
+        <h1 class="text-3xl font-bold text-center text-indigo-600 mb-4">Chat App</h1>
+        <div id="chat-box" 
+            class="border border-gray-300 rounded-lg h-64 overflow-y-auto p-3 bg-gray-50">
+          
+        </div>
+        <form id="chat-form" class="mt-4 flex space-x-2">
+            <input type="text" id="username" 
+                placeholder="Your Name" 
+                required 
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-300" />
+            <input type="text" id="message" 
+                placeholder="Your Message" 
+                required 
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-300" />
+            <button type="submit" 
+                class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition">
+                Send
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const chatForm = document.getElementById("chat-form");
+        const usernameInput = document.getElementById("username");
+        const messageInput = document.getElementById("message");
+
+        let lastTimestamp = 0;
+
+        async function fetchMessages() {
+            try {
+                const response = await fetch(`http://localhost:3030/messages?since=${lastTimestamp}`);
+                const data = await response.json();
+                data.messages.forEach(msg => {
+                    const msgDiv = document.createElement("div");
+                    msgDiv.className = "py-1 px-2 bg-indigo-100 rounded my-1";
+                    msgDiv.textContent = `${msg.username}: ${msg.message}`;
+                    chatBox.appendChild(msgDiv);
+                    lastTimestamp = Math.max(lastTimestamp, msg.timestamp);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                console.error("Error fetching messages:", error);
+            }
+            setTimeout(fetchMessages, 1000);  //  here check message  in every 1 sec
+        }
+
+      
+        chatForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const username = usernameInput.value;
+            const message = messageInput.value;
+
+            try {
+                await fetch("http://localhost:3030/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, message }),
+                });
+                messageInput.value = ""; 
+            } catch (error) {
+                console.error("Error sending message:", error);
+            }
+        });
+
+        fetchMessages(); 
+    </script>
+</body>
+</html>
